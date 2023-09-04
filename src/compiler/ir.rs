@@ -8,18 +8,11 @@ pub struct Location {
 }
 
 impl Location {
-    pub fn new_no_file(row: usize, column: usize) -> Self {
+    pub fn new(row: usize, column: usize, path: Option<String>) -> Self {
         Self {
             row,
             column,
-            path: None,
-        }
-    }
-    pub fn new<T: Into<String>>(row: usize, column: usize, path: T) -> Self {
-        Self {
-            row,
-            column,
-            path: Some(path.into()),
+            path,
         }
     }
 }
@@ -35,7 +28,13 @@ impl Display for Location {
 }
 
 #[derive(Debug, PartialEq)]
-pub enum TokenType {}
+pub enum TokenType {
+    Illegal,
+    Identifier,
+    IfKeyword,
+    ElseKeyword,
+    Function,
+}
 
 #[derive(Debug)]
 pub struct Token {
@@ -74,9 +73,9 @@ mod test {
 
     #[test]
     fn should_format_location_correctly() {
-        assert_eq!(format!("{}", Location::new_no_file(69, 69)), "69:69");
+        assert_eq!(format!("{}", Location::new(69, 69, None)), "69:69");
         assert_eq!(
-            format!("{}", Location::new(69, 69, "/usr/lib")),
+            format!("{}", Location::new(69, 69, Some("/usr/lib".to_string()))),
             "/usr/lib:69:69"
         );
     }

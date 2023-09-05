@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Location {
     pub row: usize,
     pub column: usize,
@@ -9,11 +9,7 @@ pub struct Location {
 
 impl Location {
     pub fn new(row: usize, column: usize, path: Option<String>) -> Self {
-        Self {
-            row,
-            column,
-            path,
-        }
+        Self { row, column, path }
     }
 }
 
@@ -27,16 +23,86 @@ impl Display for Location {
     }
 }
 
-#[derive(Debug, PartialEq)]
+//TODO: Strings, Proper numbers (floats, binary, hex),
+//      Binary Operations,
+#[derive(Debug, PartialEq, Clone)]
 pub enum TokenType {
+    // Utility
     Illegal,
+    EndOfFile,
+
+    // Literals
     Identifier,
-    IfKeyword,
-    ElseKeyword,
+    Number,
+
+    // Sepparators
+    Comma,
+    SemiColon,
+    ParenOpen,
+    ParenClose,
+    BraceOpen,
+    BraceClose,
+    BracketOpen,
+    BracketClose,
+    Colon,
+    ArrowRight,
+
+    // Operators
+    Plus,
+    PlusEquals,
+
+    Minus,
+    MinusEquals,
+
+    Asterisk,
+    AsteriskEquals,
+
+    Slash,
+    SlashEquals,
+
+    Bang,
+    NotEquals,
+
+    GreaterThen,
+    GreaterEqualThen,
+
+    LessThen,
+    LessEqualThen,
+
+    Assign,
+    Equals,
+
+    ColonColon,
+    ColonEquals,
+
+    // Keywords
+    If,
+    Else,
     Function,
+    True,
+    False,
+    Return,
+    Use,
+    Import,
+    For,
+    From,
+    While,
+    Loop,
+    Null,
+    Try,
+    Catch,
+    Enum,
+    Class,
+    Match,
+    Interface,
+    Async,
+    Await,
+    Break,
+    Continue,
+    Where,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Token {
     pub location: Location,
     pub literal: String,

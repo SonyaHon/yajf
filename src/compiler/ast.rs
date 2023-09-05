@@ -65,13 +65,27 @@ impl NumberLiteralData {
 #[derive(Debug)]
 pub enum Statement {
     Declaration(DeclarationData),
+    Expression(ExpressionStatementData),
 }
 
 impl Statement {
     pub fn test_string(&self) -> String {
         match self {
             Statement::Declaration(data) => data.test_string(),
+            Statement::Expression(data) => data.test_string(),
         }
+    }
+}
+
+#[derive(Debug)]
+pub struct ExpressionStatementData {
+    pub token: Token,
+    pub expression: Expression,
+}
+
+impl ExpressionStatementData {
+    pub fn test_string(&self) -> String {
+        format!("{}", self.expression)
     }
 }
 

@@ -21,6 +21,7 @@ pub enum Expression {
     InfixOperation(InfixOperationData),
     IfExpression(IfExpressionData),
     BlockExpression(BlockExpressionData),
+    FunctionExpression(FunctionExpressionData),
 }
 
 impl Display for Expression {
@@ -35,8 +36,18 @@ impl Display for Expression {
                 Expression::InfixOperation(data) => data.test_string(),
                 Expression::IfExpression(data) => data.test_string(),
                 Expression::BlockExpression(data) => data.test_string(),
+                Expression::FunctionExpression(data) => data.test_string(),
             }
         )
+    }
+}
+
+impl Into<FunctionExpressionData> for Expression {
+    fn into(self) -> FunctionExpressionData {
+        match self {
+            Expression::FunctionExpression(data) => data,
+            _ => unreachable!(),
+        }
     }
 }
 
@@ -91,6 +102,27 @@ impl Into<PrefixOperationData> for Expression {
             Expression::PrefixOperation(data) => data,
             _ => unreachable!(),
         }
+    }
+}
+
+#[derive(Debug)]
+pub struct FunctionExpressionData {
+    pub token: Token,
+    pub arguments: Vec<IdentifierData>,
+    pub body: BlockExpressionData,
+}
+
+impl FunctionExpressionData {
+    pub fn test_string(&self) -> String {
+        format!(
+            "func({}) {}",
+            self.arguments
+                .iter()
+                .map(|arg| arg.test_string())
+                .collect::<Vec<String>>()
+                .join(", "),
+            self.body.test_string()
+        )
     }
 }
 

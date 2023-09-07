@@ -3,9 +3,9 @@ use std::mem::swap;
 use super::{
     ast::{
         BlockExpressionData, DeclarationData, DeclarationVariant, Expression,
-        ExpressionStatementData, IdentifierData, IfExpressionBranch,
-        IfExpressionData, InfixOperationData, Module, NumberLiteralData,
-        PrefixOperationData, Statement, Type,
+        ExpressionStatementData, FunctionExpressionData, IdentifierData,
+        IfExpressionBranch, IfExpressionData, InfixOperationData, Module,
+        NumberLiteralData, PrefixOperationData, Statement, Type,
     },
     ir::{Token, TokenType},
     lexer::Lexer,
@@ -89,6 +89,13 @@ impl Parser {
     }
 
     fn parse_declaration_statement(&mut self) -> Option<Statement> {
+        if !self.next_token.is_of_type(TokenType::ColonColon)
+            && !self.next_token.is_of_type(TokenType::ColonEquals)
+            && !self.next_token.is_of_type(TokenType::Identifier)
+        {
+            return self.parse_expression_statement();
+        }
+
         let token = self.current_token.clone();
         let identifier = self.parse_identifier();
 
@@ -169,6 +176,7 @@ impl Parser {
             TokenType::ParenOpen => self.parse_grouped_expression(),
             TokenType::If => self.parse_if_expression(),
             TokenType::BraceOpen => self.parse_block_expression(),
+            TokenType::Function => self.parse_function_expression(),
             _ => None,
         };
 
@@ -200,6 +208,50 @@ impl Parser {
         }
 
         expr
+    }
+
+    fn parse_function_expression(&mut self) -> Option<Expression> {
+        let token = self.current_token.clone();
+        self.advance();
+
+        if !self.current_token.is_of_type(TokenType::ParenOpen) {
+            self.gen_error("Expected (");
+            return None;
+        }
+        self.advance();
+
+        let mut arguments = vec![];
+
+        while !self.current_token.is_of_type(TokenType::ParenClose) {
+            let arg = self.parse_identifier();
+            if arg.is_none() {
+                self.gen_error("Expected argument");
+                return None;
+            }
+            arguments.push(arg.unwrap().into());
+
+            if !self.current_token.is_of_type(TokenType::Comma)
+                && !self.current_token.is_of_type(TokenType::ParenClose)
+            {
+                self.gen_error("Expected )");
+                return None;
+            } else if self.current_token.is_of_type(TokenType::Comma) {
+                self.advance();
+            }
+        }
+        self.advance();
+
+        let body = self.parse_block_expression();
+        if body.is_none() {
+            self.gen_error("Expected block statement");
+            return None;
+        }
+
+        Some(Expression::FunctionExpression(FunctionExpressionData {
+            token,
+            arguments,
+            body: body.unwrap().into(),
+        }))
     }
 
     fn parse_if_expression(&mut self) -> Option<Expression> {
@@ -448,5 +500,10 @@ mod test {
     #[test]
     fn block_expressions() {
         do_test("{10 20}", "{10; 20}");
+    }
+
+    #[test]
+    fn function_expression() {
+        do_test("func(x, y) { x + y }", "func(x any, y any) {(x any + y any)}")
     }
 }

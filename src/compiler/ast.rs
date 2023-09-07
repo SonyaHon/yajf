@@ -22,6 +22,7 @@ pub enum Expression {
     IfExpression(IfExpressionData),
     BlockExpression(BlockExpressionData),
     FunctionExpression(FunctionExpressionData),
+    InvokationExpression(InvokationExpressionData),
 }
 
 impl Display for Expression {
@@ -37,8 +38,18 @@ impl Display for Expression {
                 Expression::IfExpression(data) => data.test_string(),
                 Expression::BlockExpression(data) => data.test_string(),
                 Expression::FunctionExpression(data) => data.test_string(),
+                Expression::InvokationExpression(data) => data.test_string(),
             }
         )
+    }
+}
+
+impl Into<InvokationExpressionData> for Expression {
+    fn into(self) -> InvokationExpressionData {
+        match self {
+            Expression::InvokationExpression(data) => data,
+            _ => unreachable!(),
+        }
     }
 }
 
@@ -102,6 +113,27 @@ impl Into<PrefixOperationData> for Expression {
             Expression::PrefixOperation(data) => data,
             _ => unreachable!(),
         }
+    }
+}
+
+#[derive(Debug)]
+pub struct InvokationExpressionData {
+    pub token: Token,
+    pub target: Box<Expression>,
+    pub arguments: Vec<Expression>,
+}
+
+impl InvokationExpressionData {
+    pub fn test_string(&self) -> String {
+        format!(
+            "{}({})",
+            self.target,
+            self.arguments
+                .iter()
+                .map(|arg| format!("{}", arg))
+                .collect::<Vec<String>>()
+                .join(", ")
+        )
     }
 }
 

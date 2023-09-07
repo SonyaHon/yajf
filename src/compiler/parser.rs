@@ -4,8 +4,9 @@ use super::{
     ast::{
         BlockExpressionData, DeclarationData, DeclarationVariant, Expression,
         ExpressionStatementData, FunctionExpressionData, IdentifierData,
-        IfExpressionBranch, IfExpressionData, InfixOperationData, Module,
-        NumberLiteralData, PrefixOperationData, Statement, Type,
+        IfExpressionBranch, IfExpressionData, InfixOperationData,
+        InvokationExpressionData, Module, NumberLiteralData,
+        PrefixOperationData, Statement, Type,
     },
     ir::{Token, TokenType},
     lexer::Lexer,
@@ -185,6 +186,13 @@ impl Parser {
             return None;
         }
 
+        expr = match self.current_token.typ {
+            TokenType::ParenOpen => {
+                self.parse_invokation_expression(expr.unwrap())
+            }
+            _ => expr,
+        };
+
         while !self.current_token.is_of_type(TokenType::EndOfFile)
             && priority < self.get_current_token_priority()
         {
@@ -208,6 +216,41 @@ impl Parser {
         }
 
         expr
+    }
+
+    fn parse_invokation_expression(
+        &mut self,
+        expr: Expression,
+    ) -> Option<Expression> {
+        let token = self.current_token.clone();
+        self.advance();
+
+        let mut arguments = vec![];
+
+        while !self.current_token.is_of_type(TokenType::ParenClose) {
+            let arg = self.parse_expression(Priority::Lowest);
+            if arg.is_none() {
+                self.gen_error("Expected argument");
+                return None;
+            }
+            arguments.push(arg.unwrap().into());
+
+            if !self.current_token.is_of_type(TokenType::Comma)
+                && !self.current_token.is_of_type(TokenType::ParenClose)
+            {
+                self.gen_error("Expected )");
+                return None;
+            } else if self.current_token.is_of_type(TokenType::Comma) {
+                self.advance();
+            }
+        }
+        self.advance();
+
+        Some(Expression::InvokationExpression(InvokationExpressionData {
+            token,
+            arguments,
+            target: Box::from(expr),
+        }))
     }
 
     fn parse_function_expression(&mut self) -> Option<Expression> {
@@ -504,6 +547,14 @@ mod test {
 
     #[test]
     fn function_expression() {
-        do_test("func(x, y) { x + y }", "func(x any, y any) {(x any + y any)}")
+        do_test(
+            "func(x, y) { x + y }",
+            "func(x any, y any) {(x any + y any)}",
+        )
+    }
+
+    #[test]
+    fn invokation_expression() {
+        do_test("foo(x, 3 + 1)", "foo any(x any, (3 + 1))");
     }
 }

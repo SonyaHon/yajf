@@ -19,6 +19,8 @@ pub enum Expression {
     Identifier(IdentifierData),
     PrefixOperation(PrefixOperationData),
     InfixOperation(InfixOperationData),
+    IfExpression(IfExpressionData),
+    BlockExpression(BlockExpressionData),
 }
 
 impl Display for Expression {
@@ -31,8 +33,28 @@ impl Display for Expression {
                 Expression::Identifier(data) => data.test_string(),
                 Expression::PrefixOperation(data) => data.test_string(),
                 Expression::InfixOperation(data) => data.test_string(),
+                Expression::IfExpression(data) => data.test_string(),
+                Expression::BlockExpression(data) => data.test_string(),
             }
         )
+    }
+}
+
+impl Into<BlockExpressionData> for Expression {
+    fn into(self) -> BlockExpressionData {
+        match self {
+            Expression::BlockExpression(data) => data,
+            _ => unreachable!(),
+        }
+    }
+}
+
+impl Into<IfExpressionData> for Expression {
+    fn into(self) -> IfExpressionData {
+        match self {
+            Expression::IfExpression(data) => data,
+            _ => unreachable!(),
+        }
     }
 }
 
@@ -69,6 +91,68 @@ impl Into<PrefixOperationData> for Expression {
             Expression::PrefixOperation(data) => data,
             _ => unreachable!(),
         }
+    }
+}
+
+#[derive(Debug)]
+pub struct BlockExpressionData {
+    pub token: Token,
+    pub statements: Vec<Statement>,
+}
+
+impl BlockExpressionData {
+    pub fn test_string(&self) -> String {
+        format!(
+            "{{{}}}",
+            self.statements
+                .iter()
+                .map(|stmt| stmt.test_string())
+                .collect::<Vec<String>>()
+                .join("; ")
+        )
+    }
+}
+
+#[derive(Debug)]
+pub struct IfExpressionBranch {
+    pub token: Token,
+    pub condition: Option<Expression>,
+    pub consequense: BlockExpressionData,
+}
+
+#[derive(Debug)]
+pub struct IfExpressionData {
+    pub token: Token,
+    pub branches: Vec<IfExpressionBranch>,
+}
+
+impl IfExpressionData {
+    pub fn test_string(&self) -> String {
+        format!(
+            "{}",
+            self.branches
+                .iter()
+                .enumerate()
+                .map(|(idx, branch)| {
+                    if idx == 0 {
+                        format!(
+                            "if {} {}",
+                            branch.condition.as_ref().unwrap(),
+                            branch.consequense.test_string(),
+                        )
+                    } else if branch.condition.is_some() {
+                        format!(
+                            "else if {} {}",
+                            branch.condition.as_ref().unwrap(),
+                            branch.consequense.test_string(),
+                        )
+                    } else {
+                        format!("else {}", branch.consequense.test_string())
+                    }
+                })
+                .collect::<Vec<String>>()
+                .join(" ")
+        )
     }
 }
 

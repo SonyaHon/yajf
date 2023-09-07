@@ -2,9 +2,10 @@ use std::mem::swap;
 
 use super::{
     ast::{
-        DeclarationData, DeclarationVariant, Expression,
-        ExpressionStatementData, IdentifierData, InfixOperationData, Module,
-        NumberLiteralData, PrefixOperationData, Statement, Type,
+        BlockExpressionData, DeclarationData, DeclarationVariant, Expression,
+        ExpressionStatementData, IdentifierData, IfExpressionBranch,
+        IfExpressionData, InfixOperationData, Module, NumberLiteralData,
+        PrefixOperationData, Statement, Type,
     },
     ir::{Token, TokenType},
     lexer::Lexer,
@@ -166,6 +167,7 @@ impl Parser {
                 self.parse_prefix_expression()
             }
             TokenType::ParenOpen => self.parse_grouped_expression(),
+            TokenType::If => self.parse_if_expression(),
             _ => None,
         };
 
@@ -197,6 +199,85 @@ impl Parser {
         }
 
         expr
+    }
+
+    fn parse_if_expression(&mut self) -> Option<Expression> {
+        let token = self.current_token.clone();
+        self.advance();
+
+        let condition = self.parse_expression(Priority::Lowest);
+        if condition.is_none() {
+            self.gen_error("Expected expression");
+            return None;
+        }
+
+        let consequense = self.parse_block_expression();
+        if consequense.is_none() {
+            self.gen_error("Block statement");
+            return None;
+        }
+
+        let mut branches = vec![IfExpressionBranch {
+            token: token.clone(),
+            condition,
+            consequense: consequense.unwrap().into(),
+        }];
+
+        while self.current_token.is_of_type(TokenType::Else) {
+            let token = self.current_token.clone();
+            self.advance();
+            let mut condition = None;
+            if self.current_token.is_of_type(TokenType::If) {
+                self.advance();
+                condition = self.parse_expression(Priority::Lowest);
+                if condition.is_none() {
+                    self.gen_error("Expected expression");
+                    return None;
+                }
+            }
+            let consequense = self.parse_block_expression();
+            if consequense.is_none() {
+                self.gen_error("Block statement");
+                return None;
+            }
+
+            branches.push(IfExpressionBranch {
+                token,
+                condition,
+                consequense: consequense.unwrap().into(),
+            });
+        }
+
+        Some(Expression::IfExpression(IfExpressionData {
+            token,
+            branches,
+        }))
+    }
+
+    fn parse_block_expression(&mut self) -> Option<Expression> {
+        let token = self.current_token.clone();
+        self.advance();
+        let mut statements = vec![];
+
+        while !self.current_token.is_of_type(TokenType::BraceClose) {
+            if self.current_token.is_of_type(TokenType::EndOfFile) {
+                self.gen_error("Unfinished }");
+                return None;
+            }
+            let statement = self.parse_statement();
+            if statement.is_some() {
+                statements.push(statement.unwrap());
+            } else {
+                self.advance();
+            }
+        }
+
+        self.advance();
+
+        Some(Expression::BlockExpression(BlockExpressionData {
+            token,
+            statements,
+        }))
     }
 
     fn parse_grouped_expression(&mut self) -> Option<Expression> {
@@ -342,8 +423,24 @@ mod test {
         do_test("3 * (1 + 2)", "(3 * (1 + 2))");
     }
 
-    // #[test]
-    // fn if_expression() {
-    //     do_test("if x == true { 10 }", "if x == true { 10 }")
-    // }
+    #[test]
+    fn if_expression() {
+        do_test("if x == 10 { 10 }", "if (x any == 10) {10}");
+        do_test(
+            "if x == 10 { 10 } else { 20 }",
+            "if (x any == 10) {10} else {20}",
+        );
+        do_test(
+            "if x == 10 { 10 } else if y == 20 { 20 }",
+            "if (x any == 10) {10} else if (y any == 20) {20}",
+        );
+        do_test(
+            "if x == 10 { 10 } else if y == 10 { 30 } else { 20 }",
+            "if (x any == 10) {10} else if (y any == 10) {30} else {20}",
+        );
+        do_test(
+            "if x == 10 { 10 } else if y == 10 { 30 } else if y == 10 { 30 } else { 20 }",
+            "if (x any == 10) {10} else if (y any == 10) {30} else if (y any == 10) {30} else {20}",
+        );
+    }
 }

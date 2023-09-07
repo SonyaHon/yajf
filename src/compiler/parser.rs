@@ -168,6 +168,7 @@ impl Parser {
             }
             TokenType::ParenOpen => self.parse_grouped_expression(),
             TokenType::If => self.parse_if_expression(),
+            TokenType::BraceOpen => self.parse_block_expression(),
             _ => None,
         };
 
@@ -442,5 +443,10 @@ mod test {
             "if x == 10 { 10 } else if y == 10 { 30 } else if y == 10 { 30 } else { 20 }",
             "if (x any == 10) {10} else if (y any == 10) {30} else if (y any == 10) {30} else {20}",
         );
+    }
+
+    #[test]
+    fn block_expressions() {
+        do_test("{10 20}", "{10; 20}");
     }
 }

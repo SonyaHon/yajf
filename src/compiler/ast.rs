@@ -262,6 +262,7 @@ impl NumberLiteralData {
 #[derive(Debug)]
 pub enum Statement {
     Declaration(DeclarationData),
+    Return(ReturnData),
     Expression(ExpressionStatementData),
 }
 
@@ -270,7 +271,20 @@ impl Statement {
         match self {
             Statement::Declaration(data) => data.test_string(),
             Statement::Expression(data) => data.test_string(),
+            Statement::Return(data) => data.test_string(),
         }
+    }
+}
+
+#[derive(Debug)]
+pub struct ReturnData {
+    pub token: Token,
+    pub return_value: Expression,
+}
+
+impl ReturnData {
+    pub fn test_string(&self) -> String {
+        format!("return {}", self.return_value)
     }
 }
 

@@ -6,7 +6,7 @@ use super::{
         ExpressionStatementData, FunctionExpressionData, IdentifierData,
         IfExpressionBranch, IfExpressionData, InfixOperationData,
         InvokationExpressionData, Module, NumberLiteralData,
-        PrefixOperationData, Statement, Type,
+        PrefixOperationData, ReturnData, Statement, Type,
     },
     ir::{Token, TokenType},
     lexer::Lexer,
@@ -70,9 +70,24 @@ impl Parser {
 
     fn parse_statement(&mut self) -> Option<Statement> {
         match self.current_token.typ {
+            TokenType::Return => self.parse_return_statement(),
             TokenType::Identifier => self.parse_declaration_statement(),
             _ => self.parse_expression_statement(),
         }
+    }
+
+    fn parse_return_statement(&mut self) -> Option<Statement> {
+        let token = self.current_token.clone();
+        self.advance();
+        let expression = self.parse_expression(Priority::Lowest);
+        if expression.is_none() {
+            self.gen_error("Expected expression");
+            return None;
+        }
+        Some(Statement::Return(ReturnData {
+            token,
+            return_value: expression.unwrap(),
+        }))
     }
 
     fn parse_expression_statement(&mut self) -> Option<Statement> {
@@ -556,5 +571,10 @@ mod test {
     #[test]
     fn invokation_expression() {
         do_test("foo(x, 3 + 1)", "foo any(x any, (3 + 1))");
+    }
+
+    #[test]
+    fn return_statement() {
+        do_test("return foo()", "return foo any()");
     }
 }

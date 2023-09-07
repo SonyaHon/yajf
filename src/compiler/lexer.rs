@@ -201,7 +201,7 @@ impl Lexer {
     fn parse_alphabetic_literal(&mut self) -> String {
         let position = self.position;
 
-        while self.character.is_alphanumeric() {
+        while self.character.is_alphanumeric() || self.character == '_' {
             self.read_char()
         }
 
@@ -312,13 +312,13 @@ mod test {
 
     #[test]
     fn should_parse_all_tokens() {
-        let input = r#"x 10 , ; ( ) { } [ ] : => + += - -= * *= / /= ! != > >=
+        let input = r#"x_x 10 , ; ( ) { } [ ] : => + += - -= * *= / /= ! != > >=
                        < <= = == :: := if else func true false return use
                        import for from while loop null try catch enum class
                        match interface async await break continue where"#;
 
         let test_data = vec![
-            (TokenType::Identifier, "x"),
+            (TokenType::Identifier, "x_x"),
             (TokenType::Number, "10"),
             (TokenType::Comma, ","),
             (TokenType::SemiColon, ";"),

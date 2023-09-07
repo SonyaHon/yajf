@@ -17,6 +17,8 @@ impl Display for Type {
 pub enum Expression {
     NumberLiteral(NumberLiteralData),
     Identifier(IdentifierData),
+    PrefixOperation(PrefixOperationData),
+    InfixOperation(InfixOperationData),
 }
 
 impl Display for Expression {
@@ -27,8 +29,19 @@ impl Display for Expression {
             match self {
                 Expression::NumberLiteral(data) => data.test_string(),
                 Expression::Identifier(data) => data.test_string(),
+                Expression::PrefixOperation(data) => data.test_string(),
+                Expression::InfixOperation(data) => data.test_string(),
             }
         )
+    }
+}
+
+impl Into<InfixOperationData> for Expression {
+    fn into(self) -> InfixOperationData {
+        match self {
+            Expression::InfixOperation(data) => data,
+            _ => unreachable!(),
+        }
     }
 }
 
@@ -47,6 +60,42 @@ impl Into<IdentifierData> for Expression {
             Expression::Identifier(data) => data,
             _ => unreachable!(),
         }
+    }
+}
+
+impl Into<PrefixOperationData> for Expression {
+    fn into(self) -> PrefixOperationData {
+        match self {
+            Expression::PrefixOperation(data) => data,
+            _ => unreachable!(),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct InfixOperationData {
+    pub token: Token,
+    pub operation: String,
+    pub left: Box<Expression>,
+    pub right: Box<Expression>,
+}
+
+impl InfixOperationData {
+    pub fn test_string(&self) -> String {
+        format!("({} {} {})", self.left, self.operation, self.right)
+    }
+}
+
+#[derive(Debug)]
+pub struct PrefixOperationData {
+    pub token: Token,
+    pub operation: String,
+    pub expression: Box<Expression>,
+}
+
+impl PrefixOperationData {
+    pub fn test_string(&self) -> String {
+        format!("({}{})", self.operation, self.expression)
     }
 }
 
